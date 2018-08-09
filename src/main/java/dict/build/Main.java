@@ -14,7 +14,7 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		if (args.length == 0) {
+/*		if (args.length == 0) {
 			System.out.println("rawpath");
 			return;
 		}
@@ -22,21 +22,24 @@ public class Main {
 		String rawpath = null;
 		if (args.length > 0) {
 			rawpath = args[0];
-		}
+		}*/
+	    
+	    
+	    String rawpath = "C:\\Users\\Volong\\Desktop\\new_word_discover\\test.txt";
 		
-		String left = null;
-		String right = null;
-		String entropyfile = null;
+		String leftNgramFreqSortFilePath = null;
+		String rightNgramFreqSortFilePath = null;
+		String entropyFilePath = null;
 
 		FastBuilder builder = new FastBuilder();
 
-		if (null == right)
-			right = builder.genFreqRight(rawpath, 6, 10 * 1024);
-		if (null == left)
-			left = builder.genLeft(rawpath, 6, 10 * 1024);
-		if (null == entropyfile)
-			entropyfile = builder.mergeEntropy(right, left);
+		if (null == rightNgramFreqSortFilePath)
+			rightNgramFreqSortFilePath = builder.genRightNgramFreqSortFile(rawpath, 6, 10 * 1024);
+		if (null == leftNgramFreqSortFilePath)
+			leftNgramFreqSortFilePath = builder.genLeftNgramFreqSortFile(rawpath, 6, 10 * 1024);
+		if (null == entropyFilePath)
+			entropyFilePath = builder.mergeEntropy(rightNgramFreqSortFilePath, leftNgramFreqSortFilePath);
 
-		builder.extractWords(right, entropyfile);
+		builder.extractWords(rightNgramFreqSortFilePath, entropyFilePath);
 	}
 }

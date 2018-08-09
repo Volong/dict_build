@@ -40,11 +40,12 @@ public class PosProbability {
 				int freq = 1;
 				for (int i = 0; i < seg[0].length(); ++i) {
 					String label = null;
-					if (0 == i) {
+					
+					if (0 == i) { // 词首
 						label = "S";
-					} else if (seg[0].length() - 1 == i) {
+					} else if (seg[0].length() - 1 == i) { // 词尾
 						label = "E";
-					} else {
+					} else { // 词中
 						label = "M";
 					}
 					String key = seg[0].substring(i, i + 1);
