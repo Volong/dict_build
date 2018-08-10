@@ -3,6 +3,8 @@
  */
 package dict.build;
 
+import java.util.Arrays;
+
 /**
  * @author zhangcheng
  *
@@ -34,12 +36,13 @@ public class Main {
 		FastBuilder builder = new FastBuilder();
 
 		if (null == rightNgramFreqSortFilePath)
-			rightNgramFreqSortFilePath = builder.genRightNgramFreqSortFile(rawpath, 6, 10 * 1024);
+			rightNgramFreqSortFilePath = builder.genRightNgramFreqSortFile(rawpath, 6);
 		if (null == leftNgramFreqSortFilePath)
-			leftNgramFreqSortFilePath = builder.genLeftNgramFreqSortFile(rawpath, 6, 10 * 1024);
+			leftNgramFreqSortFilePath = builder.genLeftNgramFreqSortFile(rawpath, 6);
 		if (null == entropyFilePath)
 			entropyFilePath = builder.mergeEntropy(rightNgramFreqSortFilePath, leftNgramFreqSortFilePath);
 
 		builder.extractWords(rightNgramFreqSortFilePath, entropyFilePath);
+	    
 	}
 }
