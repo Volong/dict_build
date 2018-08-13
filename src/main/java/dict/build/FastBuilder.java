@@ -26,8 +26,6 @@ import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.RadixTree;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultCharArrayNodeFactory;
 
-import dict.build.dictionary.DictionaryFactory;
-
 /**
  * 
  * @author Jennifer
@@ -128,6 +126,7 @@ public class FastBuilder {
 		}
 	}
 
+	
 	public String genLeftNgramFreqSortFile(String rawTextFile, int maxLen) {
 
 		File rawFile = new File(rawTextFile);
@@ -190,20 +189,20 @@ public class FastBuilder {
         	String ngramSortFileLine = null;
         	Map<String, CounterMap> stats = Maps.newHashMap();
         	while (null != (ngramSortFileLine = ngramSortFileReader.readLine())) {
-//        		if (null == first) {
-//        			for (int i = 1; i < ngramSortFileLine.length(); ++i) {
-//        				String word = ngramSortFileLine.substring(0, i);
-//        				String suffix = ngramSortFileLine.substring(i).substring(0, 1);
-//        				if (stats.containsKey(word)) {
-//        					stats.get(word).incr(suffix);
-//        				} else {
-//        					CounterMap cm = new CounterMap();
-//        					cm.incr(suffix);
-//        					stats.put(word, cm);
-//        				}
-//        			}
-//        			first = ngramSortFileLine.substring(0, 1);
-//        		} else {
+        		if (null == first) {
+        			for (int i = 1; i < ngramSortFileLine.length(); ++i) {
+        				String word = ngramSortFileLine.substring(0, i);
+        				String suffix = ngramSortFileLine.substring(i).substring(0, 1);
+        				if (stats.containsKey(word)) {
+        					stats.get(word).incr(suffix);
+        				} else {
+        					CounterMap cm = new CounterMap();
+        					cm.incr(suffix);
+        					stats.put(word, cm);
+        				}
+        			}
+        			first = ngramSortFileLine.substring(0, 1);
+        		} else {
         			if (first != null && !ngramSortFileLine.startsWith(first)) {
 
         				StringBuilder builder = new StringBuilder();
@@ -241,8 +240,28 @@ public class FastBuilder {
         				}
         			}
         			first = ngramSortFileLine.substring(0, 1);
-//        		}
+        		}
         	}
+        	StringBuilder builder = new StringBuilder();
+            for (String word : stats.keySet()) {
+                CounterMap cm = stats.get(word);
+                
+                int freq = 0;
+                for (String k : cm.countAll().keySet()) {
+                    freq += cm.get(k);
+                }
+                
+                double re = 0;
+                for (String k : cm.countAll().keySet()) {
+                    double p = cm.get(k) * 1.0 / freq;
+                    re += -1 * Math.log(p) / Math.log(2) * p;
+                }
+                // 为什么少了  append("\t").append(freq)
+                // 因为词的频次不管是从哪个方向统计，频次都是一样的
+                builder.append(reverse(word)).append("\t").append(re).append("\n");
+            }
+            ngramFreqFileWriter.write(builder.toString());
+            stats.clear();
         	ngramFreqFileWriter.flush();
         }
     }
@@ -286,7 +305,7 @@ public class FastBuilder {
 			
 			ngramFileWriter.flush();
 			
-			System.out.println("right is over, gen sorting...");
+			LOG.info("right is over, gen sorting...");
 			
 			sortFile(ngramFile, ngramSortFile);
 			
@@ -352,6 +371,27 @@ public class FastBuilder {
 						}
 					}
 				}
+				
+				StringBuilder builder = new StringBuilder();
+                for (String word : stats.keySet()) {
+                    CounterMap cm = stats.get(word);
+                    
+                    // 某个词所有相邻后缀字出现的次数
+                    int freq = 0;
+                    for (String k : cm.countAll().keySet()) {
+                        freq += cm.get(k);
+                    }
+                    // 熵
+                    double re = 0;
+                    for (String k : cm.countAll().keySet()) {
+                        double p = cm.get(k) * 1.0 / freq;
+                        re += -1 * Math.log(p) / Math.log(2) * p;
+                    }
+                    builder.append(word).append("\t").append(freq).append("\t").append(re).append("\n");
+                }
+                ngramFreqFileWriter.write(builder.toString());
+                stats.clear();
+                
 				ngramFreqFileWriter.flush();
 			}
 			
@@ -382,6 +422,7 @@ public class FastBuilder {
 			while (null != (line = rightNgramFreqSortFileReader.readLine())) {
 				mergeTmpWriter.write(line + "\n");
 			}
+			
 			line = null;
 			while (null != (line = leftNgramFreqSortFileReader.readLine())) {
 				mergeTmpWriter.write(line + "\n");
@@ -418,7 +459,7 @@ public class FastBuilder {
 				String[] seg1 = TAB_COMPILE.split(line1);
 				String[] seg2 = TAB_COMPILE.split(line2);
 				
-				// 如果两个关键词不相等，说经只有左统计或者右统计
+				// 如果两个关键词不相等，说明只有左统计或者右统计
 				if (!seg1[0].equals(seg2[0])) {
 				    System.out.println(seg1[0]);
 					line1 = line2;
@@ -561,9 +602,16 @@ public class FastBuilder {
 					    max = ff;
 					}
 				}
-				
+				// 乘以 total 是为了扩大结果，不然 pf 的值太小了
 				double pf = (double) freq / max * total;
 				double pmi = Math.log(pf) / Math.log(2);
+				if ("乌龟".equals(word)) {
+				    System.out.println("freq:" + freq);
+				    System.out.println("max:" + max);
+				    System.out.println("total:" + total);
+				    System.out.println("pf:" + pf);
+				    System.out.println("pmi:" + pmi);
+				}
 				if (Double.isNaN(pmi)) {
 				    continue;
 				}
@@ -574,9 +622,9 @@ public class FastBuilder {
 				    pp = Math.min(posProp.get(word.subSequence(0, 1))[0], 
 				            posProp.get(word.subSequence(word.length() - 1, word.length()))[2]);
 				}
-				
-				// || pp < 0.1 
-                if (pmi < 5 || entropy < 2 || DictionaryFactory.getDictionary().contains(word)) {
+				 
+				// || pp < 0.1   || DictionaryFactory.getDictionary().contains(word)
+                if (pmi < 5 || entropy < 1.85) {
 				    continue;
 				}
 				// 词    频次    点间互信息    熵    ngram
